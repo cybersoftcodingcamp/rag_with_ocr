@@ -2,20 +2,26 @@ import os
 import uuid
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams, PointStruct
-from config import QDRANT_HOST, QDRANT_API_KEY, FOLDER_PATH
+from config import QDRANT_HOST, QDRANT_PORT, FOLDER_PATH
 from utils import extract_text_from_image, get_embedding
 
 def get_qdrant_client():
-    return QdrantClient(url=QDRANT_HOST, api_key=QDRANT_API_KEY)
+    return QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
 
 # Hàm ingest (có thể gọi từ Streamlit hoặc standalone)
 def ingest_data(collection_name, progress_callback=None, status_callback=None):
     qdrant_client = get_qdrant_client()
     
-    # Tạo collection nếu chưa tồn tại
+    # Kiểm tra và tạo collection nếu chưa tồn tại (cơ chế bạn yêu cầu)
+    # Nếu collection đã có, chỉ upsert points (lưu data).
+    # Nếu chưa có, tạo mới và upsert.
     try:
         qdrant_client.get_collection(collection_name)
+        if status_callback:
+            status_callback(f"Collection '{collection_name}' đã tồn tại, tiến hành lưu data...")
     except ValueError:
+        if status_callback:
+            status_callback(f"Collection '{collection_name}' chưa tồn tại, đang tạo mới...")
         qdrant_client.create_collection(
             collection_name=collection_name,
             vectors_config=VectorParams(size=1536, distance=Distance.COSINE)
