@@ -2,11 +2,11 @@ import os
 import uuid
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams, PointStruct
-from config import QDRANT_HOST, QDRANT_PORT, FOLDER_PATH
+from config import QDRANT_HOST, QDRANT_API_KEY, FOLDER_PATH
 from utils import extract_text_from_image, get_embedding
 
 def get_qdrant_client():
-    return QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
+    return QdrantClient(url=QDRANT_HOST, api_key=QDRANT_API_KEY)
 
 # Hàm ingest (có thể gọi từ Streamlit hoặc standalone)
 def ingest_data(collection_name, progress_callback=None, status_callback=None):
