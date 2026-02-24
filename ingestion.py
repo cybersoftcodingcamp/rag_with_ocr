@@ -17,11 +17,7 @@ def ingest_data(collection_name, progress_callback=None, status_callback=None):
     # Nếu chưa có, tạo mới và upsert.
     try:
         qdrant_client.get_collection(collection_name)
-        if status_callback:
-            status_callback(f"Collection '{collection_name}' đã tồn tại, tiến hành lưu data...")
-    except ValueError:
-        if status_callback:
-            status_callback(f"Collection '{collection_name}' chưa tồn tại, đang tạo mới...")
+    except Exception as e:
         qdrant_client.create_collection(
             collection_name=collection_name,
             vectors_config=VectorParams(size=1536, distance=Distance.COSINE)
@@ -31,15 +27,9 @@ def ingest_data(collection_name, progress_callback=None, status_callback=None):
     total_files = len(image_files)
     
     for idx, filename in enumerate(image_files):
-        if status_callback:
-            status_callback(f"Processing {filename} ({idx+1}/{total_files})...")
         
         image_path = os.path.join(FOLDER_PATH, filename)
         text = extract_text_from_image(image_path)
-        if not text:
-            if status_callback:
-                status_callback(f"No text extracted from {filename}")
-            continue
         
         embedding = get_embedding(text)
         
@@ -52,13 +42,3 @@ def ingest_data(collection_name, progress_callback=None, status_callback=None):
             collection_name=collection_name,
             points=[point]
         )
-        
-        if progress_callback:
-            progress_callback((idx + 1) / total_files)
-    
-    if status_callback:
-        status_callback("Ingestion completed!")
-
-# Nếu chạy standalone: python ingestion.py
-if __name__ == "__main__":
-    ingest_data('law_database')
