@@ -12,17 +12,6 @@ def get_qdrant_client():
 def ingest_data(collection_name, progress_callback=None, status_callback=None):
     qdrant_client = get_qdrant_client()
     
-    # Kiểm tra và tạo collection nếu chưa tồn tại (cơ chế bạn yêu cầu)
-    # Nếu collection đã có, chỉ upsert points (lưu data).
-    # Nếu chưa có, tạo mới và upsert.
-    try:
-        qdrant_client.get_collection(collection_name)
-    except Exception as e:
-        qdrant_client.create_collection(
-            collection_name=collection_name,
-            vectors_config=VectorParams(size=1536, distance=Distance.COSINE)
-        )
-    
     image_files = [f for f in os.listdir(FOLDER_PATH) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp'))]
     total_files = len(image_files)
     
