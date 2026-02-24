@@ -20,19 +20,6 @@ if uploaded_files:
 # Load danh sách ảnh sau upload (vì Streamlit rerun script)
 image_files = [f for f in os.listdir(FOLDER_PATH) if f.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp'))]
 
-# Hiển thị ảnh ngay (sẽ update tự động sau upload)
-st.subheader("Danh Sách Ảnh Hiện Có")
-if image_files:
-    cols = st.columns(3)
-    for idx, filename in enumerate(image_files):
-        image_path = os.path.join(FOLDER_PATH, filename)
-        img = Image.open(image_path)
-        img.thumbnail((200, 200))
-        with cols[idx % 3]:
-            st.image(img, caption=filename, use_column_width=True)
-else:
-    st.info("Chưa có ảnh nào trong thư mục.")
-
 # Input collection
 collection_name = st.text_input("Nhập Tên Index (Collection) Để Lưu:", value=DEFAULT_COLLECTION)
 
@@ -41,6 +28,17 @@ qdrant_client = get_qdrant_client()
 
 # Kiểm tra collection tồn tại (sử dụng collection_exists thay vì has_collection)
 collection_exists = qdrant_client.collection_exists(collection_name)
+
+# Nếu collection chưa tồn tại, hiển thị button để tạo
+if not collection_exists:
+    if st.button("Tạo Collection Mới", icon="🆕"):
+        with st.spinner("Đang tạo collection..."):
+            qdrant_client.create_collection(
+                collection_name=collection_name,
+                vectors_config=VectorParams(size=1536, distance=Distance.COSINE)
+            )
+        st.success(f"Đã tạo collection '{collection_name}' thành công! Bây giờ bạn có thể trích xuất và lưu data.")
+        st.rerun()  # Rerun để update status
 
 # Button ingest
 if st.button("Trích Xuất và Lưu", icon="💾"):
@@ -53,14 +51,16 @@ if st.button("Trích Xuất và Lưu", icon="💾"):
         status_text = st.empty()
         ingest_data(collection_name, progress_callback=progress_bar.progress, status_callback=status_text.text)
         st.success("Đã trích xuất và lưu thành công!")
-
-# Nếu collection chưa tồn tại, hiển thị button để tạo
-if not collection_exists:
-    if st.button("Tạo Collection Mới", icon="🆕"):
-        with st.spinner("Đang tạo collection..."):
-            qdrant_client.create_collection(
-                collection_name=collection_name,
-                vectors_config=VectorParams(size=1536, distance=Distance.COSINE)
-            )
-        st.success(f"Đã tạo collection '{collection_name}' thành công! Bây giờ bạn có thể trích xuất và lưu data.")
-        st.rerun()  # Rerun để update status
+        
+# Hiển thị ảnh ngay (sẽ update tự động sau upload)
+st.subheader("Danh Sách Ảnh Hiện Có")
+if image_files:
+    cols = st.columns(3)
+    for idx, filename in enumerate(image_files):
+        image_path = os.path.join(FOLDER_PATH, filename)
+        img = Image.open(image_path)
+        img.thumbnail((200, 200))
+        with cols[idx % 3]:
+            st.image(img, caption=filename, use_column_width=True)
+else:
+    st.info("Chưa có ảnh nào trong thư mục.")
